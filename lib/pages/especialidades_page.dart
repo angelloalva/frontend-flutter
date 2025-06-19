@@ -1,12 +1,14 @@
 import 'dart:convert';
 
 import 'package:citas_app/models/especialidad.dart';
-import 'package:citas_app/services/especialidad_service.dart';
 import 'package:flutter/material.dart';
 import 'package:citas_app/widgets/especialidades_card.dart';
+import 'package:provider/provider.dart';
+import 'package:citas_app/providers/usuario_provider.dart';
+import 'package:citas_app/providers/especialidad_provider.dart';
 
 class EspecialidadesPage extends StatefulWidget {
-  const EspecialidadesPage({Key? key}) : super(key: key);
+  const EspecialidadesPage({super.key});
 
   @override
   State<EspecialidadesPage> createState() => _EspecialidadesPageState();
@@ -14,50 +16,22 @@ class EspecialidadesPage extends StatefulWidget {
 
 class _EspecialidadesPageState extends State<EspecialidadesPage> {
   final TextEditingController _searchController = TextEditingController();
-  List<Especialidad> especialidades = [];
-  List<Especialidad> especialidadesFiltradas = [];
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchEspecialidades();
-    _searchController.addListener(_filterEspecialidades);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<EspecialidadProvider>(context, listen: false).fetchEspecialidades(context);
+    });
+    _searchController.addListener(() {
+      setState(() {}); // Para actualizar la búsqueda
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _fetchEspecialidades() async {
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      final fetchedEspecialidades = await EspecialidadService().getEspecialidades(context);
-      setState(() {
-        especialidades = fetchedEspecialidades;
-        especialidadesFiltradas = List.from(especialidades);
-      });
-    } catch (e) {
-      _handleApiError(e);
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _filterEspecialidades() {
-    String query = _searchController.text.toLowerCase();
-    setState(() {
-      especialidadesFiltradas = especialidades.where((especialidad) {
-        return especialidad.nombre.toLowerCase().contains(query) ||
-               especialidad.descripcion.toLowerCase().contains(query);
-      }).toList();
-    });
   }
 
   void _showCreateDialog() {
@@ -94,34 +68,33 @@ class _EspecialidadesPageState extends State<EspecialidadesPage> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar'),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nombreController.text.isNotEmpty) {
-                setState(() {
-                  _isLoading = true;
-                });
-                try {
-                  final nuevaEspecialidad = await EspecialidadService().createEspecialidad(
-                    
-                    nombre: nombreController.text,
-                    descripcion: descripcionController.text,context: context
-                  );
-                  setState(() {
-                    especialidades.add(nuevaEspecialidad);
-                    _filterEspecialidades();
-                  });
-                  Navigator.pop(context);
-                  _showMessage('Especialidad creada exitosamente', isError: false);
-                } catch (e) {
-                  _handleApiError(e);
-                } finally {
-                  setState(() {
-                    _isLoading = false;
-                  });
-                }
-              }
-            },
-            child: const Text('Guardar'),
+          Consumer<EspecialidadProvider>(
+            builder: (context, provider, _) => ElevatedButton(
+              onPressed: provider.isLoading
+                  ? null
+                  : () async {
+                      if (nombreController.text.isNotEmpty) {
+                        try {
+                          await provider.createEspecialidad(
+                            context: context,
+                            nombre: nombreController.text,
+                            descripcion: descripcionController.text,
+                          );
+                          Navigator.pop(context);
+                          _showMessage('Especialidad creada exitosamente', isError: false);
+                        } catch (e) {
+                          _handleApiError(e);
+                        }
+                      }
+                    },
+              child: provider.isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Guardar'),
+            ),
           ),
         ],
       ),
@@ -162,39 +135,34 @@ class _EspecialidadesPageState extends State<EspecialidadesPage> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar'),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nombreController.text.isNotEmpty) {
-                setState(() {
-                  _isLoading = true;
-                });
-                try {
-                  // Using POST for editing as a temporary workaround
-                  final updatedEspecialidad = await EspecialidadService().updateEspecialidad(
-                    id: especialidad.id,
-                    nombre: nombreController.text,
-                    descripcion: descripcionController.text,
-                    context:context,
-                  );
-                  setState(() {
-                    int index = especialidades.indexWhere((e) => e.id == especialidad.id);
-                    if (index != -1) {
-                      especialidades[index] = updatedEspecialidad;
-                      _filterEspecialidades();
-                    }
-                  });
-                  Navigator.pop(context);
-                  _showMessage('Especialidad actualizada exitosamente', isError: false);
-                } catch (e) {
-                  _handleApiError(e);
-                } finally {
-                  setState(() {
-                    _isLoading = false;
-                  });
-                }
-              }
-            },
-            child: const Text('Actualizar'),
+          Consumer<EspecialidadProvider>(
+            builder: (context, provider, _) => ElevatedButton(
+              onPressed: provider.isLoading
+                  ? null
+                  : () async {
+                      if (nombreController.text.isNotEmpty) {
+                        try {
+                          await provider.updateEspecialidad(
+                            context: context,
+                            id: especialidad.id,
+                            nombre: nombreController.text,
+                            descripcion: descripcionController.text,
+                          );
+                          Navigator.pop(context);
+                          _showMessage('Especialidad actualizada exitosamente', isError: false);
+                        } catch (e) {
+                          _handleApiError(e);
+                        }
+                      }
+                    },
+              child: provider.isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Actualizar'),
+            ),
           ),
         ],
       ),
@@ -212,29 +180,31 @@ class _EspecialidadesPageState extends State<EspecialidadesPage> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar'),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              setState(() {
-                _isLoading = true;
-              });
-              try {
-                await EspecialidadService().deleteEspecialidad(especialidad.id, context);
-                setState(() {
-                  especialidades.removeWhere((e) => e.id == especialidad.id);
-                  _filterEspecialidades();
-                });
-                Navigator.pop(context);
-                _showMessage('Especialidad eliminada exitosamente', isError: false);
-              } catch (e) {
-                _handleApiError(e);
-              } finally {
-                setState(() {
-                  _isLoading = false;
-                });
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Eliminar'),
+          Consumer<EspecialidadProvider>(
+            builder: (context, provider, _) => ElevatedButton(
+              onPressed: provider.isLoading
+                  ? null
+                  : () async {
+                      try {
+                        await provider.deleteEspecialidad(
+                          context: context,
+                          id: especialidad.id,
+                        );
+                        Navigator.pop(context);
+                        _showMessage('Especialidad eliminada exitosamente', isError: false);
+                      } catch (e) {
+                        _handleApiError(e);
+                      }
+                    },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: provider.isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Eliminar'),
+            ),
           ),
         ],
       ),
@@ -252,124 +222,140 @@ class _EspecialidadesPageState extends State<EspecialidadesPage> {
   }
 
   void _handleApiError(dynamic e) {
- String message = 'Error desconocido';
-  if (e is Exception) {
-    String errorString = e.toString();
-    try {
-      final errorJson = json.decode(errorString.split(': ').last);
-      if (errorString.contains('404')) {
-        message = errorJson['message'] ?? 'Especialidad no encontrada';
-      } else if (errorString.contains('400')) {
-        final details = errorJson['details'] as Map<String, dynamic>;
-        message = details.entries.map((e) => '${e.key}: ${e.value}').join(', ');
-      } else if (errorString.contains('403')) {
-        message = 'No tienes permiso para realizar esta acción';
-      } else if (errorString.contains('401')) {
-        message = 'Sesión expirada. Por favor, inicia sesión nuevamente';
-      } else {
-        message = errorJson['message'] ?? 'Error inesperado';
+    String message = 'Error desconocido';
+    if (e is Exception) {
+      String errorString = e.toString();
+      try {
+        final errorJson = json.decode(errorString.split(': ').last);
+        if (errorString.contains('404')) {
+          message = errorJson['message'] ?? 'Especialidad no encontrada';
+        } else if (errorString.contains('400')) {
+          final details = errorJson['details'] as Map<String, dynamic>;
+          message = details.entries.map((e) => '${e.key}: ${e.value}').join(', ');
+        } else if (errorString.contains('403')) {
+          message = 'No tienes permiso para realizar esta acción';
+        } else if (errorString.contains('401')) {
+          message = 'Sesión expirada. Por favor, inicia sesión nuevamente';
+        } else {
+          message = errorJson['message'] ?? 'Error inesperado';
+        }
+      } catch (_) {
+        message = errorString;
       }
-    } catch (_) {
-      message = errorString;
     }
-  }
     _showMessage(message, isError: true);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('Especialidades'),
-        backgroundColor: Colors.purple[600],
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          // Header con búsqueda
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.purple[600],
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Buscar especialidades...',
-                    prefixIcon: const Icon(Icons.search),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
+    final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
+    final isAdmin = usuarioProvider.isAdmin ?? false;
+
+    return Consumer<EspecialidadProvider>(
+      builder: (context, provider, _) {
+        final query = _searchController.text.toLowerCase();
+        final listaMostrar = query.isEmpty
+            ? provider.especialidades
+            : provider.especialidades.where((especialidad) {
+                return especialidad.nombre.toLowerCase().contains(query) ||
+                    especialidad.descripcion.toLowerCase().contains(query);
+              }).toList();
+
+        return Scaffold(
+          backgroundColor: Colors.grey[50],
+          appBar: AppBar(
+            title: const Text('Especialidades'),
+            backgroundColor: Colors.purple[600],
+            foregroundColor: Colors.white,
+            elevation: 0,
+          ),
+          body: Column(
+            children: [
+              // Header con búsqueda
+              Container(
+                padding: const EdgeInsets.all(16),
+                color: Colors.purple[600],
+                child: Column(
                   children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _isLoading ? null : () => _showCreateDialog(),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Nueva Especialidad'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.purple[600],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                    TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Buscar especialidades...',
+                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Lista de especialidades
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : especialidadesFiltradas.isEmpty
-                    ? const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.search_off,
-                              size: 64,
-                              color: Colors.grey,
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              'No se encontraron especialidades',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
+                    const SizedBox(height: 16),
+                    if (isAdmin)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: provider.isLoading ? null : () => _showCreateDialog(),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Nueva Especialidad'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.purple[600],
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                               ),
                             ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: especialidadesFiltradas.length,
-                        itemBuilder: (context, index) {
-                          final especialidad = especialidadesFiltradas[index];
-                          return EspecialidadCard(
-                            especialidad: especialidad,
-                            onEdit: () => _showEditDialog(especialidad),
-                            onDelete: () => _showDeleteDialog(especialidad),
-                          );
-                        },
+                          ),
+                        ],
                       ),
+                  ],
+                ),
+              ),
+
+              // Lista de especialidades
+              Expanded(
+                child: provider.isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : listaMostrar.isEmpty
+                        ? const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.search_off,
+                                  size: 64,
+                                  color: Colors.grey,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'No se encontraron especialidades',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: listaMostrar.length,
+                            itemBuilder: (context, index) {
+                              final especialidad = listaMostrar[index];
+                              return EspecialidadCard(
+                                especialidad: especialidad,
+                                onEdit: isAdmin ? () => _showEditDialog(especialidad) : null,
+                                onDelete: isAdmin ? () => _showDeleteDialog(especialidad) : null,
+                              );
+                            },
+                          ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:citas_app/models/registro.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -29,6 +30,22 @@ class ApiService {
     }
   }
 
+  Future<void> crearUsuario(Registro usuario) async {
+    final body = 
+      usuario.toJson()
+    ;
+    print('Body: $usuario');
+    final response = await http.post(
+      Uri.parse('$_baseUrl/auth/register'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(body),
+    );
 
+    if (response.statusCode != 201) {
+      throw Exception('Error al crear usuario: ${response.body}');
+    }
+  }
 
 }

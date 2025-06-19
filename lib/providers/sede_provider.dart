@@ -1,4 +1,5 @@
 // lib/providers/sede_provider.dart
+import 'package:citas_app/utils/session_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/sede.dart';
@@ -29,6 +30,10 @@ class SedeProvider with ChangeNotifier {
       if (token == null) throw Exception('No se encontró el token de autenticación');
       _sedes = await _sedeService.obtenerSedes(token);
     } catch (e) {
+      if (e.toString().contains('SESSION_EXPIRED')) {
+      await handleSessionExpired(context);
+      return;
+    }
       _error = e.toString();
     } finally {
       _isLoading = false;
@@ -48,6 +53,10 @@ class SedeProvider with ChangeNotifier {
       _sedes.add(nuevaSede);
       notifyListeners();
     } catch (e) {
+       if (e.toString().contains('SESSION_EXPIRED')) {
+      await handleSessionExpired(context);
+      return;
+    }
       _error = e.toString();
     } finally {
       _isLoading = false;
@@ -74,6 +83,10 @@ class SedeProvider with ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
+       if (e.toString().contains('SESSION_EXPIRED')) {
+      await handleSessionExpired(context);
+      return;
+    }
       _error = e.toString();
     } finally {
       _isLoading = false;
@@ -93,6 +106,10 @@ class SedeProvider with ChangeNotifier {
       _sedes.removeWhere((sede) => sede.id == id);
       notifyListeners();
     } catch (e) {
+       if (e.toString().contains('SESSION_EXPIRED')) {
+      await handleSessionExpired(context);
+      return;
+    }
       _error = e.toString();
     } finally {
       _isLoading = false;

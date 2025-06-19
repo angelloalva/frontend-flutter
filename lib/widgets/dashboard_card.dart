@@ -7,13 +7,13 @@ class DashboardCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const DashboardCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.icon,
     required this.color,
     required this.subtitle,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

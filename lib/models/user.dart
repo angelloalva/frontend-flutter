@@ -1,4 +1,3 @@
-
 class User {
   final String id;
   final String nombres;
@@ -8,7 +7,7 @@ class User {
   final String direccion;
   final String tipoDocumento;
   final String numeroDocumento;
-  final Set<String> roles;
+  final List<String> roles; // Cambiado de Set<String> a List<String>
   User({
     required this.id,
     required this.nombres,
@@ -29,9 +28,9 @@ class User {
       celular: json['celular'] ?? '',
       correo: json['correo'] ?? '',
       direccion: json['direccion'] ?? '',
-      tipoDocumento :json['tipoDocumento'] ?? 1,
-      numeroDocumento: json['numeroDocumento'] ?? '',  
-      roles: (json['roles'] as List<dynamic>?)?.cast<String>().toSet() ?? {},
+      tipoDocumento: json['tipoDocumento'] ?? '',
+      numeroDocumento: json['numeroDocumento'] ?? '',
+      roles: List<String>.from(json['roles'] ?? []), // Cambiado para List<String>
     );
   }
 
@@ -45,7 +44,7 @@ class User {
       'direccion': direccion,
       'tipoDocumento': tipoDocumento,
       'numeroDocumento': numeroDocumento,
-      'roles': roles.toList(), // Convertir Set<String> a List<String>v
+      'roles': roles, // Ya es List<String>
     };
   }
 }

@@ -1,5 +1,5 @@
 import 'package:citas_app/models/sede.dart';
-import 'package:citas_app/pages/sede_provider.dart';
+import 'package:citas_app/providers/sede_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 
 class EspecialidadCard extends StatelessWidget {
   final Especialidad especialidad;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const EspecialidadCard({
-    Key? key,
+    super.key,
     required this.especialidad,
-    required this.onEdit,
-    required this.onDelete,
-  }) : super(key: key);
+    this.onEdit,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -46,40 +46,44 @@ class EspecialidadCard extends StatelessWidget {
             ),
           ),
         ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            switch (value) {
-              case 'edit':
-                onEdit();
-                break;
-              case 'delete':
-                onDelete();
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'edit',
-              child: Row(
-                children: [
-                  Icon(Icons.edit, color: Colors.blue),
-                  SizedBox(width: 8),
-                  Text('Editar'),
+        trailing: (onEdit != null || onDelete != null)
+            ? PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'edit':
+                      if (onEdit != null) onEdit!();
+                      break;
+                    case 'delete':
+                      if (onDelete != null) onDelete!();
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  if (onEdit != null)
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit, color: Colors.blue),
+                          SizedBox(width: 8),
+                          Text('Editar'),
+                        ],
+                      ),
+                    ),
+                  if (onDelete != null)
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Eliminar'),
+                        ],
+                      ),
+                    ),
                 ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Eliminar'),
-                ],
-              ),
-            ),
-          ],
-        ),
+              )
+            : null,
       ),
     );
   }
