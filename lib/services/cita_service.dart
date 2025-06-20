@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:citas_app/models/CitaResponse.dart';
 import 'package:citas_app/models/cita.dart';
 import 'package:http/http.dart' as http;
 
@@ -23,7 +24,7 @@ class CitaService {
       throw Exception('Error al crear cita: ${response.body}');
     }
   }
-   Future<List<Cita>> obtenerCitasPorPaciente(String pacienteId, String token) async {
+   Future<List<CitaResponse>> obtenerCitasPorPaciente(String pacienteId, String token) async {
     final response = await http.get(
       Uri.parse('$baseUrl/paciente/$pacienteId'),
       headers: {
@@ -34,7 +35,7 @@ class CitaService {
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      return data.map((e) => Cita.fromJson(e)).toList();
+      return data.map((e) => CitaResponse.fromJson(e)).toList();
     } else {
       throw Exception('Error al obtener citas: ${response.body}');
     }

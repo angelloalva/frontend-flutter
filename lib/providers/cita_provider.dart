@@ -1,4 +1,5 @@
 
+import 'package:citas_app/models/CitaResponse.dart';
 import 'package:flutter/material.dart';
 import 'package:citas_app/services/cita_service.dart';
 import 'package:citas_app/models/cita.dart';
@@ -9,8 +10,8 @@ class CitaProvider with ChangeNotifier {
 
   bool isLoading = false;
   String? error;
-  List<Cita> _citas = [];
-  List<Cita> get citas => _citas;
+  List<CitaResponse> _citas = [];
+  List<CitaResponse> get citas => _citas;
     Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('jwt_token');

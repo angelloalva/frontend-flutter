@@ -56,6 +56,7 @@ class _DashboardPageState extends State<DashboardPage> {
         final roles = usuarioProvider.usuario?.roles ?? [];
         final esDoctor = roles.contains('DOCTOR');
         final esAdmin = roles.contains('ADMIN');
+        final esPaciente = roles.contains('PACIENTE');
         final puedeVerTurnos = roles.contains('ADMIN') || esDoctor;
 
         // Obtén las listas de especialidades y sedes
@@ -117,13 +118,15 @@ class _DashboardPageState extends State<DashboardPage> {
                     Navigator.pushNamed(context, '/especialidad');
                   },
                 ),
-                ListTile(
-                  leading: const Icon(Icons.calendar_today),
-                  title: const Text('Citas'),
-                  onTap: () {
-                    Navigator.pushNamed(context, '/citas');
-                  },
-                ),
+                 
+                if (esPaciente )  
+                  ListTile(
+                    leading: const Icon(Icons.calendar_today),
+                    title: const Text('Citas'),
+                    onTap: () {
+                      Navigator.pushNamed(context, '/citas');
+                    },
+                  ),
                 // ----------- OPCIÓN MIS TURNOS SOLO PARA DOCTOR -----------
                 if (esAdmin)
                   
@@ -239,15 +242,16 @@ class _DashboardPageState extends State<DashboardPage> {
                           Navigator.pushNamed(context, '/paciente');
                         },
                       ),
-                    DashboardCard(
-                      title: 'Citas',
-                      icon: Icons.calendar_today,
-                      color: Colors.green,
-                      subtitle: 'Gestiona tus citas médicas',
-                      onTap: () {
-                        Navigator.pushNamed(context, '/citas');
-                      },
-                    ),
+                    if (esPaciente )  
+                      DashboardCard(
+                        title: 'Citas',
+                        icon: Icons.calendar_today,
+                        color: Colors.green,
+                        subtitle: 'Gestiona tus citas médicas',
+                        onTap: () {
+                          Navigator.pushNamed(context, '/citas');
+                        },
+                      ),
                     DashboardCard(
                       title: 'Especialidades',
                       icon: Icons.calendar_today,
@@ -267,7 +271,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           Navigator.pushNamed(context, '/doctores');
                         },
                       ),
-                    if (esAdmin)
+                    if (esAdmin|| esDoctor)
                       DashboardCard(
                         title: 'Sedes',
                         icon: Icons.location_on,

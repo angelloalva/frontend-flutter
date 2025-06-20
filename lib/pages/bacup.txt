@@ -5,7 +5,6 @@ import 'package:citas_app/providers/turno_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:table_calendar/table_calendar.dart';
 
 class CrearCitaPage extends StatefulWidget {
   const CrearCitaPage({super.key});
@@ -30,12 +29,8 @@ class _CrearCitaPageState extends State<CrearCitaPage> {
   bool pacienteIdCargado = false;
   String searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  bool mostrarBusqueda = true;
-  TurnoResponse? doctorSeleccionado;
-
-  // Variables para el calendario
-  DateTime _focusedDay = DateTime.now();
-  CalendarFormat _calendarFormat = CalendarFormat.month;
+  bool mostrarBusqueda = true; // Controla la visibilidad del cajón de búsqueda
+  TurnoResponse? doctorSeleccionado; // Almacena el doctor seleccionado
 
   @override
   void initState() {
@@ -115,13 +110,11 @@ class _CrearCitaPageState extends State<CrearCitaPage> {
         .map((dia) => dia.fecha)
         .toSet()
         .toList();
-    print('Días disponibles: $dias');
     setState(() {
       diasDisponibles = dias;
       fechaSeleccionada = null;
       slotSeleccionado = null;
       slotsDisponibles = [];
-      _focusedDay = dias.isNotEmpty ? dias.first : DateTime.now();
     });
   }
 
@@ -129,16 +122,10 @@ class _CrearCitaPageState extends State<CrearCitaPage> {
     final slots = turnosDisponibles
         .where((turno) => turno.doctorId == doctorId && turno.sedeId == sedeId)
         .expand((turno) => turno.diasDisponibles)
-        .where((dia) {
-          final diaFecha = DateTime(dia.fecha.year, dia.fecha.month, dia.fecha.day);
-          final selectedFecha = DateTime(fechaSeleccionada.year, fechaSeleccionada.month, fechaSeleccionada.day);
-          return isSameDay(diaFecha, selectedFecha);
-        })
+        .where((dia) => dia.fecha.toLocal().toString().split(' ')[0] == fechaSeleccionada.toLocal().toString().split(' ')[0])
         .expand((dia) => dia.slots.where((slot) => !slot.ocupado))
         .map((slot) => slot.fechaHoraCompleta)
         .toList();
-    print('Fecha seleccionada: $fechaSeleccionada');
-    print('Slots disponibles: $slots');
     setState(() {
       slotsDisponibles = slots;
       slotSeleccionado = null;
@@ -169,7 +156,7 @@ class _CrearCitaPageState extends State<CrearCitaPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Cita creada exitosamente')),
           );
-          Navigator.pop(context,true);
+          Navigator.pop(context);
         }
       } catch (e) {
         if (mounted) {
@@ -207,9 +194,9 @@ class _CrearCitaPageState extends State<CrearCitaPage> {
       }
     }
     return sedesUnicas.values.map((turno) => DropdownMenuItem(
-          value: turno.sedeId,
-          child: Text(turno.sedeNombre),
-        )).toList();
+      value: turno.sedeId,
+      child: Text(turno.sedeNombre),
+    )).toList();
   }
 
   @override
@@ -287,6 +274,7 @@ class _CrearCitaPageState extends State<CrearCitaPage> {
                     child: ListView(
                       children: [
                         if (mostrarBusqueda) ...[
+                          // Cajón de búsqueda
                           TextFormField(
                             controller: _searchController,
                             decoration: const InputDecoration(
@@ -297,6 +285,7 @@ class _CrearCitaPageState extends State<CrearCitaPage> {
                             validator: (v) => doctorId == null ? 'Seleccione un doctor' : null,
                           ),
                           const SizedBox(height: 16),
+                          // Lista de doctores
                           ..._getFilteredDoctors().map((turno) => Card(
                                 margin: const EdgeInsets.symmetric(vertical: 8),
                                 child: ListTile(
@@ -323,6 +312,7 @@ class _CrearCitaPageState extends State<CrearCitaPage> {
                                 ),
                               )),
                         ] else if (doctorSeleccionado != null) ...[
+                          // Doctor seleccionado
                           Card(
                             child: Padding(
                               padding: const EdgeInsets.all(16),
@@ -386,64 +376,27 @@ class _CrearCitaPageState extends State<CrearCitaPage> {
                                 ),
                               )
                             : diasDisponibles.isNotEmpty
-                                ? Card(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8),
-                                      child: SizedBox(
-                                        height: 300,
-                                        child: TableCalendar(
-                                          locale: 'es_ES',
-                                          firstDay: DateTime.now().subtract(const Duration(days: 365)),
-                                          lastDay: DateTime.now().add(const Duration(days: 365)),
-                                          focusedDay: _focusedDay,
-                                          calendarFormat: _calendarFormat,
-                                          selectedDayPredicate: (day) =>
-                                              fechaSeleccionada != null &&
-                                              isSameDay(fechaSeleccionada!, day),
-                                          onDaySelected: (selectedDay, focusedDay) {
-                                            if (diasDisponibles.any((dia) =>
-                                                isSameDay(dia, selectedDay))) {
-                                              setState(() {
-                                                fechaSeleccionada = selectedDay;
-                                                _focusedDay = focusedDay;
-                                                _cargarSlotsDisponibles(selectedDay);
-                                              });
-                                            }
-                                          },
-                                          enabledDayPredicate: (day) =>
-                                              diasDisponibles.any((dia) => isSameDay(dia, day)),
-                                          calendarStyle: CalendarStyle(
-                                            selectedDecoration: BoxDecoration(
-                                              color: Colors.blue,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            todayDecoration: BoxDecoration(
-                                              color: Colors.blue.withOpacity(0.3),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            disabledTextStyle: TextStyle(color: Colors.grey[400]),
-                                            cellMargin: const EdgeInsets.all(2),
-                                            defaultTextStyle: const TextStyle(fontSize: 14),
-                                          ),
-                                          headerStyle: HeaderStyle(
-                                            formatButtonVisible: true,
-                                            titleTextStyle: const TextStyle(fontSize: 16),
-                                            leftChevronPadding: const EdgeInsets.all(4),
-                                            rightChevronPadding: const EdgeInsets.all(4),
-                                          ),
-                                          daysOfWeekHeight: 20,
-                                          rowHeight: 40,
-                                          onFormatChanged: (format) {
-                                            setState(() {
-                                              _calendarFormat = format;
-                                            });
-                                          },
-                                          onPageChanged: (focusedDay) {
-                                            _focusedDay = focusedDay;
-                                          },
-                                        ),
-                                      ),
+                                ? DropdownButtonFormField<DateTime>(
+                                    value: fechaSeleccionada,
+                                    items: diasDisponibles
+                                        .map((fecha) => DropdownMenuItem(
+                                              value: fecha,
+                                              child: Text(
+                                                  '${fecha.day}/${fecha.month}/${fecha.year}'),
+                                            ))
+                                        .toList(),
+                                    onChanged: (v) {
+                                      setState(() => fechaSeleccionada = v);
+                                      if (v != null) {
+                                        _cargarSlotsDisponibles(v);
+                                      }
+                                    },
+                                    decoration: const InputDecoration(
+                                      labelText: 'Seleccione Fecha',
+                                      border: OutlineInputBorder(),
                                     ),
+                                    validator: (v) =>
+                                        v == null ? 'Seleccione una fecha' : null,
                                   )
                                 : const Card(
                                     child: Padding(
@@ -464,45 +417,23 @@ class _CrearCitaPageState extends State<CrearCitaPage> {
                                 ),
                               )
                             : slotsDisponibles.isNotEmpty
-                                ? Card(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            'Horarios Disponibles',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Wrap(
-                                            spacing: 8,
-                                            runSpacing: 8,
-                                            children: slotsDisponibles.map((slot) {
-                                              final isSelected = slotSeleccionado == slot;
-                                              return ChoiceChip(
-                                                label: Text(
-                                                  '${slot.hour}:${slot.minute.toString().padLeft(2, '0')}',
-                                                ),
-                                                selected: isSelected,
-                                                onSelected: (selected) {
-                                                  setState(() {
-                                                    slotSeleccionado = selected ? slot : null;
-                                                  });
-                                                },
-                                                selectedColor: Colors.blue,
-                                                labelStyle: TextStyle(
-                                                  color: isSelected ? Colors.white : Colors.black,
-                                                ),
-                                              );
-                                            }).toList(),
-                                          ),
-                                        ],
-                                      ),
+                                ? DropdownButtonFormField<DateTime>(
+                                    value: slotSeleccionado,
+                                    items: slotsDisponibles
+                                        .map((slot) => DropdownMenuItem(
+                                              value: slot,
+                                              child: Text(
+                                                  '${slot.hour}:${slot.minute.toString().padLeft(2, '0')}'),
+                                            ))
+                                        .toList(),
+                                    onChanged: (v) =>
+                                        setState(() => slotSeleccionado = v),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Seleccione Horario',
+                                      border: OutlineInputBorder(),
                                     ),
+                                    validator: (v) =>
+                                        v == null ? 'Seleccione un horario' : null,
                                   )
                                 : fechaSeleccionada != null
                                     ? const Card(

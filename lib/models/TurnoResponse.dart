@@ -5,6 +5,7 @@ class TurnoResponse {
   final String doctorId;
   final String doctorNombres;
   final String doctorApellidos;
+  final String doctorCmp; // Nuevo campo opcional
   final String sedeNombre;
   final String especialidadNombre;
   final List<DiaTurnoResponse> diasDisponibles;
@@ -16,6 +17,7 @@ class TurnoResponse {
     required this.doctorId,
     required this.doctorNombres,
     required this.doctorApellidos,
+    required this.doctorCmp, 
     required this.sedeNombre,
     required this.especialidadNombre,
     required this.diasDisponibles,
@@ -30,6 +32,7 @@ class TurnoResponse {
         doctorId: json['doctorId'] ?? '',
         doctorNombres: json['doctorNombres'] ?? 'Desconocido',
         doctorApellidos: json['doctorApellidos'] ?? '',
+        doctorCmp: json['doctorCmp'] ?? '', // Campo opcional
         sedeNombre: json['sedeNombre'] ?? 'Sin sede',
         especialidadNombre: json['especialidadNombre'] ?? 'Sin especialidad',
         diasDisponibles: (json['diasDisponibles'] as List<dynamic>? ?? [])
