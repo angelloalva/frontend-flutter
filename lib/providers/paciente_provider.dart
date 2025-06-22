@@ -1,3 +1,4 @@
+import 'package:citas_app/models/paciente.dart';
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../services/paciente_service.dart';
@@ -5,11 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class PacienteProvider with ChangeNotifier {
   final PacienteService _pacienteService = PacienteService();
-  List<User> _pacientes = [];
+  List<Paciente> _pacientes = [];
   bool _isLoading = false;
   String? _error;
 
-  List<User> get pacientes => _pacientes;
+  List<Paciente> get pacientes => _pacientes;
   bool get isLoading => _isLoading;
   String? get error => _error;
 

@@ -4,7 +4,7 @@ import 'package:citas_app/models/sede.dart';
 import 'package:http/http.dart' as http;
 
 class SedeService {
-  static const String baseUrl = 'http://localhost:8080/api/sedes';
+  static const String baseUrl = 'http://localhost:8082/api/sedes';
   Future<List<Sede>> obtenerSedes(String token) async {
     final response = await http.get(
       Uri.parse(baseUrl),

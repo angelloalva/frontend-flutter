@@ -6,7 +6,7 @@ import 'package:citas_app/models/user.dart';
 
 
 class UsuarioService {
-  static const String baseUrl = 'http://localhost:8080/api/usuarios';
+  static const String baseUrl = 'http://localhost:8082/api/usuarios';
 
   Future<void> crearUsuario({
      required Map<String, dynamic> usuario,

@@ -1,9 +1,10 @@
 import 'package:citas_app/models/registro.dart';
+import 'package:citas_app/models/user.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class ApiService {
-  static const String _baseUrl = 'http://localhost:8080';
+  static const String _baseUrl = 'http://localhost:8081';
 
   Future<Map<String, dynamic>> login({
     required int tipoDocumento,
@@ -29,7 +30,6 @@ class ApiService {
       throw Exception('Error ${response.statusCode}: ${response.body}');
     }
   }
-
   Future<void> crearUsuario(Registro usuario) async {
     final body = 
       usuario.toJson()
@@ -45,6 +45,26 @@ class ApiService {
 
     if (response.statusCode != 201) {
       throw Exception('Error al crear usuario: ${response.body}');
+    }
+  }
+    Future<User> miPerfil(String token) async {
+    
+    final response = await http.get(
+      Uri.parse('$_baseUrl/auth/me'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return User.fromJson(jsonDecode(response.body));
+    } else if (response.statusCode == 403) {
+      throw Exception('Acceso denegado');
+    } else if (response.statusCode == 404) {
+      throw Exception('Usuario no encontrado');
+    } else {
+      throw Exception('Error al obtener el perfil: ${response.statusCode}');
     }
   }
 

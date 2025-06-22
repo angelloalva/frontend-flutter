@@ -4,7 +4,7 @@ import 'package:citas_app/models/cita.dart';
 import 'package:http/http.dart' as http;
 
 class CitaService {
-  static const String baseUrl = 'http://localhost:8080/api/citas';
+  static const String baseUrl = 'http://localhost:8083/api/citas';
 
    Future<void> crearCita(Cita cita,String token) async {
      final jsonData = cita.toJson();

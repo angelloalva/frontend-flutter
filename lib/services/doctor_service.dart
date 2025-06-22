@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/doctor.dart';
 
 class DoctorService {
-  static const String baseUrl = 'http://localhost:8080/api/doctores';
+  static const String baseUrl = 'http://localhost:8082/api/doctores';
 
   Future<List<Doctor>> obtenerDoctores(String token) async {
     final response = await http.get(

@@ -1,9 +1,12 @@
+import 'package:citas_app/models/paciente.dart';
+import 'package:citas_app/models/user.dart';
+import 'package:citas_app/providers/api_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/paciente_provider.dart';
 import '../providers/doctor_provider.dart';
-import '../providers/usuario_provider.dart';
-import '../models/user.dart';
+
+
 
 class PacientePage extends StatefulWidget {
   const PacientePage({Key? key}) : super(key: key);
@@ -28,9 +31,9 @@ class _PacientePageState extends State<PacientePage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
-      final esAdmin = usuarioProvider.usuario?.roles.contains('ADMIN');
-      final esDoctor = usuarioProvider.usuario?.roles.contains('DOCTOR');
+      final usuarioProvider = Provider.of<AuthProvider>(context, listen: false);
+      final esAdmin = usuarioProvider.perfil?.roles.contains('ADMIN');
+      final esDoctor = usuarioProvider.perfil?.roles.contains('DOCTOR');
       if (esAdmin == true) {
         Provider.of<PacienteProvider>(context, listen: false).fetchPacientes();
       } else if (esDoctor == true) {
@@ -90,12 +93,62 @@ class _PacientePageState extends State<PacientePage> {
       ),
     );
   }
-
+ void _showPacienteDetalles2(Paciente paciente) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.person, color: Colors.blue),
+            const SizedBox(width: 8),
+            Expanded(child: Text('${paciente.nombres} ${paciente.apellidos}')),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.badge),
+              title: const Text('Tipo de documento'),
+              subtitle: Text(tipoDocumentoNombres[paciente.tipoDocumento] ?? paciente.tipoDocumento),
+            ),
+            ListTile(
+              leading: const Icon(Icons.confirmation_number),
+              title: const Text('Número de documento'),
+              subtitle: Text(paciente.numeroDocumento),
+            ),
+            ListTile(
+              leading: const Icon(Icons.phone),
+              title: const Text('Celular'),
+              subtitle: Text(paciente.celular),
+            ),
+            ListTile(
+              leading: const Icon(Icons.email),
+              title: const Text('Correo'),
+              subtitle: Text(paciente.correo),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text('Dirección'),
+              subtitle: Text(paciente.direccion),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
   @override
   Widget build(BuildContext context) {
-    final usuarioProvider = Provider.of<UsuarioProvider>(context);
-    final esAdmin = usuarioProvider.usuario?.roles.contains('ADMIN');
-    final esDoctor = usuarioProvider.usuario?.roles.contains('DOCTOR');
+    final usuarioProvider = Provider.of<AuthProvider>(context);
+    final esAdmin = usuarioProvider.perfil?.roles.contains('ADMIN');
+    final esDoctor = usuarioProvider.perfil?.roles.contains('DOCTOR');
 
     if (esAdmin == true) {
       return Consumer<PacienteProvider>(
@@ -162,10 +215,10 @@ class _PacientePageState extends State<PacientePage> {
                                 subtitle: Text('Documento: ${paciente.numeroDocumento}'),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.info_outline, color: Colors.blue),
-                                  onPressed: () => _showPacienteDetalles(paciente),
+                                  onPressed: () => _showPacienteDetalles2(paciente),
                                   tooltip: 'Ver detalles',
                                 ),
-                                onTap: () => _showPacienteDetalles(paciente),
+                                onTap: () => _showPacienteDetalles2(paciente),
                               ),
                             );
                           },

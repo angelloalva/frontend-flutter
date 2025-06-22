@@ -4,7 +4,7 @@ import 'package:citas_app/models/especialidad.dart';
 
 
 class EspecialidadService { 
-  static const String baseUrl = 'http://localhost:8080';
+  static const String baseUrl = 'http://localhost:8082';
 
   Future<List<Especialidad>> getEspecialidades(String token) async {
 
@@ -43,7 +43,7 @@ class EspecialidadService {
       }),
     );
 
-    if (response.statusCode == 201) {
+    if (response.statusCode == 200) {
       return Especialidad.fromJson(jsonDecode(response.body));
     } else if (response.statusCode == 401) {
   throw Exception('SESSION_EXPIRED');

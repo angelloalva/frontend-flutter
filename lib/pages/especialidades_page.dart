@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:citas_app/models/especialidad.dart';
+import 'package:citas_app/providers/api_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:citas_app/widgets/especialidades_card.dart';
 import 'package:provider/provider.dart';
@@ -222,6 +223,7 @@ class _EspecialidadesPageState extends State<EspecialidadesPage> {
   }
 
   void _handleApiError(dynamic e) {
+    print('Error capturado: $e');
     String message = 'Error desconocido';
     if (e is Exception) {
       String errorString = e.toString();
@@ -248,8 +250,8 @@ class _EspecialidadesPageState extends State<EspecialidadesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
-    final isAdmin = usuarioProvider.isAdmin ?? false;
+    final usuarioProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isAdmin = usuarioProvider.perfil!.roles.contains("ADMIN") ?? false;
 
     return Consumer<EspecialidadProvider>(
       builder: (context, provider, _) {

@@ -1,5 +1,6 @@
 import 'package:citas_app/models/sede.dart';
 import 'package:citas_app/pages/sede_form_dialog.dart';
+import 'package:citas_app/providers/api_provider.dart';
 import 'package:citas_app/providers/sede_provider.dart';
 import 'package:citas_app/providers/usuario_provider.dart';
 import 'package:flutter/material.dart';
@@ -45,8 +46,8 @@ class _SedesPageState extends State<SedesPage> {
   @override
   Widget build(BuildContext context) {
     final sedeProvider = Provider.of<SedeProvider>(context);
-    final usuarioProvider = Provider.of<UsuarioProvider>(context);
-    final isAdmin = usuarioProvider.isAdmin ?? false;
+    final usuarioProvider = Provider.of<AuthProvider>(context);
+    final isAdmin = usuarioProvider.perfil!.roles.contains('ADMIN') ?? false;
 
     // Filtrar sedes según el texto de búsqueda
     final sedesFiltradas = sedeProvider.sedes.where((sede) {

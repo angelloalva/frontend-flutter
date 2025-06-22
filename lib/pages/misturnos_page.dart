@@ -1,3 +1,4 @@
+import 'package:citas_app/providers/api_provider.dart';
 import 'package:citas_app/providers/doctor_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -35,12 +36,12 @@ class _MisTurnosPageState extends State<MisTurnosPage> {
     sedeNombres = {for (var s in widget.sedes) s.id: s.nombre};
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
+      final usuarioProvider = Provider.of<AuthProvider>(context, listen: false);
           final doctorProvider = Provider.of<DoctorProvider>(context, listen: false);
 
     // 🔥 Esta es la llamada que te falta 🔥
-    await doctorProvider.fetchDoctores();
-      final doctorId = usuarioProvider.usuario?.id ?? '';
+    //await doctorProvider.fetchDoctores();
+      final doctorId = usuarioProvider.perfil?.id ?? '';
       await Provider.of<TurnoProvider>(context, listen: false)
           .fetchTurnosPorDoctor(doctorId, context);
     });
@@ -48,10 +49,10 @@ class _MisTurnosPageState extends State<MisTurnosPage> {
 
   @override
   Widget build(BuildContext context) {
-    final usuarioProvider = Provider.of<UsuarioProvider>(context);
-    final roles = usuarioProvider.usuario?.roles ?? [];
+    final usuarioProvider = Provider.of<AuthProvider>(context);
+    final roles = usuarioProvider.perfil?.roles ?? [];
     final puedeCrearTurno = roles.contains('DOCTOR');
-    final doctorId = usuarioProvider.usuario?.id ?? '';
+    final doctorId = usuarioProvider.perfil?.id ?? '';
 
     return Consumer<TurnoProvider>(
       builder: (context, turnoProvider, _) {

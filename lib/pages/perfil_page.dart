@@ -1,11 +1,11 @@
 // perfil_page.dart
 import 'dart:convert';
+import 'package:citas_app/providers/api_provider.dart';
+import 'package:citas_app/providers/usuario_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:citas_app/models/user.dart';
-import '../providers/usuario_provider.dart';
-
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
 
@@ -20,10 +20,10 @@ class _PerfilPageState extends State<PerfilPage> {
   late TextEditingController _celularController;
   late TextEditingController _correoController;
   late TextEditingController _direccionController;
-  late TextEditingController _numeroDocumentoController; // Nuevo controlador
-  late String? _numeroDocumento; // Variable para almacenar numeroDocumento
+  late TextEditingController _numeroDocumentoController;
   String? _userId;
-  String? _tipoDocumentoSeleccionado = '1';
+  String? _tipoDocumentoSeleccionado;
+
   @override
   void initState() {
     super.initState();
@@ -32,56 +32,39 @@ class _PerfilPageState extends State<PerfilPage> {
     _celularController = TextEditingController();
     _correoController = TextEditingController();
     _direccionController = TextEditingController();
-    _numeroDocumentoController = TextEditingController(); // Inicializar controlador
-    _numeroDocumento = null; // Inicializar como null
+    _numeroDocumentoController = TextEditingController();
+    _tipoDocumentoSeleccionado = '1';
 
-    // Cargar userId y datos desde SharedPreferences
+    // Cargar datos iniciales
     _loadUserData();
   }
-  @override
-  void didUpdateWidget(covariant PerfilPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final usuario = Provider.of<UsuarioProvider>(context).usuario;
-    if (usuario != null) {
-      setState(() {
-        _nombresController.text = usuario.nombres;
-        _apellidosController.text = usuario.apellidos;
-        _celularController.text = usuario.celular;
-        _correoController.text = usuario.correo;
-        _direccionController.text = usuario.direccion;
-        _tipoDocumentoSeleccionado = usuario.tipoDocumento.toString();
-        _numeroDocumento = usuario.numeroDocumento; // Actualizar numeroDocumento
-        _numeroDocumentoController.text = usuario.numeroDocumento ?? ''; // Actualizar controlador
-      });
-    }
-  }
+
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     _userId = prefs.getString('user_id');
-    final userDataString = prefs.getString('user_data');
-    if (userDataString != null) {
-      final userData = jsonDecode(userDataString);
-      final user = User.fromJson(userData);
-      setState(() {
-        _nombresController.text = user.nombres;
-        _apellidosController.text = user.apellidos;
-        _celularController.text = user.celular;
-        _correoController.text = user.correo;
-        _direccionController.text = user.direccion;
-        _numeroDocumento = user.numeroDocumento; // Cargar numeroDocumento
-        _numeroDocumentoController.text = user.numeroDocumento ?? ''; // Actualizar 
-        _tipoDocumentoSeleccionado = user.tipoDocumento.toString();
-      });
-    }
 
-    // Obtener datos frescos desde la API si hay userId
     if (_userId != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Provider.of<UsuarioProvider>(context, listen: false).fetchUsuario(_userId!);
-      });
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.perfil == null) {
+        await authProvider.fetchUserProfile();
+      }
+      if (authProvider.perfil != null) {
+        _updateControllers(authProvider.perfil!);
+      }
     }
   }
-  
+
+  void _updateControllers(User user) {
+    setState(() {
+      _nombresController.text = user.nombres;
+      _apellidosController.text = user.apellidos;
+      _celularController.text = user.celular;
+      _correoController.text = user.correo;
+      _direccionController.text = user.direccion;
+      _numeroDocumentoController.text = user.numeroDocumento;
+      _tipoDocumentoSeleccionado = user.tipoDocumento;
+    });
+  }
 
   @override
   void dispose() {
@@ -90,14 +73,13 @@ class _PerfilPageState extends State<PerfilPage> {
     _celularController.dispose();
     _correoController.dispose();
     _direccionController.dispose();
-    _numeroDocumentoController.dispose(); // Dispose del nuevo controlador
-
+    _numeroDocumentoController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final usuarioProvider = Provider.of<UsuarioProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
 
     if (_userId == null) {
       return const Scaffold(
@@ -105,25 +87,36 @@ class _PerfilPageState extends State<PerfilPage> {
       );
     }
 
-    if (usuarioProvider.isLoading) {
+    if (authProvider.isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (usuarioProvider.error != null) {
+    if (authProvider.error != null) {
       return Scaffold(
-        body: Center(child: Text('Error: ${usuarioProvider.error}')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Error: ${authProvider.error}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () async {
+                  await authProvider.fetchUserProfile();
+                },
+                child: const Text('Intentar de nuevo'),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
-    final usuario = usuarioProvider.usuario;
-    if (usuario != null) {
-      _nombresController.text = usuario.nombres;
-      _apellidosController.text = usuario.apellidos;
-      _celularController.text = usuario.celular;
-      _correoController.text = usuario.correo;
-      _direccionController.text = usuario.direccion;
+    if (authProvider.perfil == null) {
+      return const Scaffold(
+        body: Center(child: Text('No se pudieron cargar los datos del perfil')),
+      );
     }
 
     final Map<String, String> tiposDocumento = {
@@ -132,7 +125,7 @@ class _PerfilPageState extends State<PerfilPage> {
       '3': 'Pasaporte',
     };
 
-    return Scaffold(
+return Scaffold(
       appBar: AppBar(
         title: const Text('Mi Perfil'),
         backgroundColor: Colors.blue[600],
@@ -154,14 +147,12 @@ class _PerfilPageState extends State<PerfilPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Avatar
                     CircleAvatar(
                       radius: 48,
                       backgroundColor: Colors.blue[100],
                       child: const Icon(Icons.person, size: 60, color: Colors.blue),
                     ),
                     const SizedBox(height: 24),
-                    // Nombres
                     TextFormField(
                       controller: _nombresController,
                       decoration: const InputDecoration(
@@ -172,7 +163,6 @@ class _PerfilPageState extends State<PerfilPage> {
                       validator: (value) => value!.isEmpty ? 'Campo requerido' : null,
                     ),
                     const SizedBox(height: 16),
-                    // Apellidos
                     TextFormField(
                       controller: _apellidosController,
                       decoration: const InputDecoration(
@@ -183,7 +173,6 @@ class _PerfilPageState extends State<PerfilPage> {
                       validator: (value) => value!.isEmpty ? 'Campo requerido' : null,
                     ),
                     const SizedBox(height: 16),
-                    // Celular
                     TextFormField(
                       controller: _celularController,
                       decoration: const InputDecoration(
@@ -194,7 +183,6 @@ class _PerfilPageState extends State<PerfilPage> {
                       validator: (value) => value!.isEmpty ? 'Campo requerido' : null,
                     ),
                     const SizedBox(height: 16),
-                    // Correo
                     TextFormField(
                       controller: _correoController,
                       decoration: const InputDecoration(
@@ -202,10 +190,15 @@ class _PerfilPageState extends State<PerfilPage> {
                         prefixIcon: Icon(Icons.email),
                         border: OutlineInputBorder(),
                       ),
-                      validator: (value) => value!.isEmpty ? 'Campo requerido' : null,
+                      validator: (value) {
+                        if (value!.isEmpty) return 'Campo requerido';
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          return 'Correo inválido';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
-                    // Tipo de documento
                     DropdownButtonFormField<String>(
                       value: _tipoDocumentoSeleccionado,
                       decoration: const InputDecoration(
@@ -227,7 +220,6 @@ class _PerfilPageState extends State<PerfilPage> {
                       validator: (value) => value == null ? 'Seleccione un tipo de documento' : null,
                     ),
                     const SizedBox(height: 16),
-                    // Número de documento (solo lectura)
                     TextFormField(
                       controller: _numeroDocumentoController,
                       decoration: const InputDecoration(
@@ -239,7 +231,6 @@ class _PerfilPageState extends State<PerfilPage> {
                       style: TextStyle(color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 16),
-                    // Dirección
                     TextFormField(
                       controller: _direccionController,
                       decoration: const InputDecoration(
@@ -249,7 +240,6 @@ class _PerfilPageState extends State<PerfilPage> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // Botón actualizar
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -272,14 +262,18 @@ class _PerfilPageState extends State<PerfilPage> {
                               correo: _correoController.text,
                               direccion: _direccionController.text,
                               tipoDocumento: _tipoDocumentoSeleccionado!,
-                              numeroDocumento: _numeroDocumento ?? '',
-                              roles: usuarioProvider.usuario?.roles ?? [],
+                              numeroDocumento: _numeroDocumentoController.text,
+                              roles: authProvider.perfil?.roles ?? [],
                             );
                             try {
-                              await Provider.of<UsuarioProvider>(context, listen: false)
-                                  .actualizarUsuario(_userId!, usuario);
-                              final prefs = await SharedPreferences.getInstance();
-                              await prefs.setString('user_data', jsonEncode(usuario.toJson()));
+                              // Usar UsuarioProvider para actualizar el usuario
+                              final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
+                              await usuarioProvider.actualizarUsuario(_userId!, usuario);
+
+                              // Actualizar AuthProvider.perfil y cachear
+                              authProvider.setPerfil(usuario);
+                              await authProvider.cacheUserProfile(usuario);
+
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Perfil actualizado correctamente')),
                               );

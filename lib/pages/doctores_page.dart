@@ -1,4 +1,5 @@
 // lib/pages/doctores_page.dart
+import 'package:citas_app/providers/api_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/doctor_provider.dart';
@@ -29,8 +30,8 @@ class _DoctoresPageState extends State<DoctoresPage> {
   @override
   Widget build(BuildContext context) {
 
-    final usuarioProvider = Provider.of<UsuarioProvider>(context);
-      final roles = usuarioProvider.usuario?.roles ?? [];
+    final usuarioProvider = Provider.of<AuthProvider>(context);
+      final roles = usuarioProvider.perfil!.roles ?? [];
 
       // 🔒 Restricción de acceso
       if (!roles.contains('ADMIN')) {

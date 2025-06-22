@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/turno.dart';
 
 class TurnoService {
-  final String baseUrl = 'http://localhost:8080/api/turnos'; // Cambia por tu URL real
+  final String baseUrl = 'http://localhost:8083/api/turnos'; // Cambia por tu URL real
 
   Future<void> crearTurno(Map<String, dynamic> turno, String token) async {
     final response = await http.post(

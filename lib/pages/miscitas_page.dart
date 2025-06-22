@@ -1,5 +1,6 @@
 import 'package:citas_app/models/user.dart';
 import 'package:citas_app/pages/citas_page.dart';
+import 'package:citas_app/providers/api_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cita_provider.dart';
@@ -20,8 +21,8 @@ class _MisCitasPageState extends State<MisCitasPage> with SingleTickerProviderSt
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
-      final pacienteId = usuarioProvider.usuario?.id ?? '';
+      final usuarioProvider = Provider.of<AuthProvider>(context, listen: false);
+      final pacienteId = usuarioProvider.perfil?.id ?? '';
       await Provider.of<CitaProvider>(context, listen: false)
           .fetchCitasPorPaciente(pacienteId, context);
     });
@@ -220,8 +221,8 @@ class _MisCitasPageState extends State<MisCitasPage> with SingleTickerProviderSt
               ).then((result) {
                 if (result == true) {
                   // Recarga las citas
-                  final usuarioProvider = Provider.of<UsuarioProvider>(context, listen: false);
-                  final pacienteId = usuarioProvider.usuario?.id ?? '';
+                  final usuarioProvider = Provider.of<AuthProvider>(context, listen: false);
+                  final pacienteId = usuarioProvider.perfil?.id ?? '';
                   Provider.of<CitaProvider>(context, listen: false)
                       .fetchCitasPorPaciente(pacienteId, context);
                 }

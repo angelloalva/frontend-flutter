@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:citas_app/models/registro.dart';
+import 'package:citas_app/models/usuarioRequest.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
@@ -19,14 +20,17 @@ class AuthProvider with ChangeNotifier {
   final Logger _logger = Logger();
 
   AuthStatus _status = AuthStatus.initial;
-  User? _user;
+  UsuarioRequest? _user;
+  User? _perfil;
   String? _token;
   String _errorMessage = '';
   bool _isLoading = false;
-
+ String? _error;
   // Getters
   AuthStatus get status => _status;
-  User? get user => _user;
+    String? get error => _error;
+  UsuarioRequest? get user => _user;
+   User? get perfil => _perfil;
   String? get token => _token;
   String get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
@@ -46,7 +50,7 @@ class AuthProvider with ChangeNotifier {
 
       if (token != null && userData != null) {
         _token = token;
-        _user = User.fromJson(jsonDecode(userData));
+        _user = UsuarioRequest.fromJson(jsonDecode(userData));
         _status = AuthStatus.authenticated;
       } else {
         _status = AuthStatus.unauthenticated;
@@ -74,15 +78,21 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
 
-      final user = User.fromJson(responseData['user'] ?? {});
+      final user = UsuarioRequest.fromJson(responseData['user'] ?? {});
       final token = responseData['jwt'] ?? '';
 
       await _saveUserData(token, user);
       
+
+      // Obtener el perfil completo desde la API
+    final perfilResponse = await _apiService.miPerfil(token);
+      _perfil = perfilResponse;
       _user = user;
       _token = token;
       _status = AuthStatus.authenticated;
-      
+
+    // Cachear el User completo
+    await cacheUserProfile(perfilResponse);
       _setLoading(false);
       return true;
 
@@ -112,7 +122,53 @@ class AuthProvider with ChangeNotifier {
     }
   }
   
+Future<void> fetchUserProfile() async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('jwt_token');
 
+  if (token == null) {
+    _status = AuthStatus.unauthenticated;
+    throw Exception('No autenticado');
+  }
+
+  try {
+    _setLoading(true);
+
+    // Intentar cargar desde el caché
+    final userData = prefs.getString('user_data');
+    if (userData != null) {
+      try {
+        _perfil = User.fromJson(jsonDecode(userData));
+        _status = AuthStatus.authenticated;
+        _setLoading(false);
+        notifyListeners();
+        return; // Salir si los datos del caché son válidos
+      } catch (e) {
+        _logger.w('Error al cargar user_data desde caché', error: e);
+      }
+    }
+
+    // Consultar la API para obtener el perfil completo
+    final response = await _apiService.miPerfil(token);
+    _perfil = response;
+    _status = AuthStatus.authenticated;
+
+    // Cachear la información del usuario como User
+    await cacheUserProfile(response);
+
+  } catch (e) {
+    _logger.e('Error al obtener perfil', error: e);
+    _error = e.toString();
+
+    // Si el token no es válido, hacer logout
+    if (e.toString().contains('401') || e.toString().contains('403')) {
+      await logout();
+    }
+  } finally {
+    _setLoading(false);
+    notifyListeners();
+  }
+}
   // Logout
   Future<void> logout() async {
     try {
@@ -132,13 +188,16 @@ class AuthProvider with ChangeNotifier {
   }
 
   // Métodos privados
-  Future<void> _saveUserData(String token, User user) async {
+  Future<void> _saveUserData(String token, UsuarioRequest user) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('jwt_token', token);
     await prefs.setString('user_id', user.id);
+    //await prefs.setString('user_data', jsonEncode(user.toJson()));
+  }
+  Future<void> cacheUserProfile(User user) async {
+    final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_data', jsonEncode(user.toJson()));
   }
-
   void _setLoading(bool loading) {
     _isLoading = loading;
     if (loading) {
@@ -152,6 +211,10 @@ class AuthProvider with ChangeNotifier {
     if (_status == AuthStatus.error) {
       _status = _user != null ? AuthStatus.authenticated : AuthStatus.unauthenticated;
     }
+    notifyListeners();
+  }
+  void setPerfil(User usuario) {
+    _perfil = usuario;
     notifyListeners();
   }
 

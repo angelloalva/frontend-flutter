@@ -1,4 +1,5 @@
 import 'package:citas_app/pages/usuarios_page.dart';
+import 'package:citas_app/providers/api_provider.dart';
 import 'package:citas_app/providers/usuario_provider.dart';
 import 'package:citas_app/providers/especialidad_provider.dart';
 import 'package:citas_app/providers/sede_provider.dart';
@@ -30,34 +31,34 @@ class _DashboardPageState extends State<DashboardPage> {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
     if (userId != null) {
-      await Provider.of<UsuarioProvider>(context, listen: false).fetchUsuario(userId);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.perfil == null) {
+        await authProvider.fetchUserProfile();
+      }
     }
   }
 
   Future<void> _logout(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('jwt_token');
-    await prefs.remove('user_id');
-    await prefs.remove('user_data');
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.logout();
     Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override
   Widget build(BuildContext context) {
-
-
-    return Consumer<UsuarioProvider>(
-      builder: (context, usuarioProvider, child) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
         String userFullName = 'Usuario';
-        if (usuarioProvider.usuario != null) {
-          userFullName = '${usuarioProvider.usuario!.nombres} ${usuarioProvider.usuario!.apellidos}'.trim();
+        if (authProvider.perfil != null) {
+          userFullName = '${authProvider.perfil!.nombres} ${authProvider.perfil!.apellidos}'.trim();
         }
 
-        final roles = usuarioProvider.usuario?.roles ?? [];
+        final roles = authProvider.perfil?.roles ?? [];
+        print('Roles: $roles');
         final esDoctor = roles.contains('DOCTOR');
         final esAdmin = roles.contains('ADMIN');
         final esPaciente = roles.contains('PACIENTE');
-        final puedeVerTurnos = roles.contains('ADMIN') || esDoctor;
+        final puedeVerTurnos = esAdmin || esDoctor;
 
         // Obtén las listas de especialidades y sedes
         final especialidades = Provider.of<EspecialidadProvider>(context).especialidades;
@@ -118,8 +119,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     Navigator.pushNamed(context, '/especialidad');
                   },
                 ),
-                 
-                if (esPaciente )  
+                if (esPaciente)
                   ListTile(
                     leading: const Icon(Icons.calendar_today),
                     title: const Text('Citas'),
@@ -127,9 +127,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       Navigator.pushNamed(context, '/citas');
                     },
                   ),
-                // ----------- OPCIÓN MIS TURNOS SOLO PARA DOCTOR -----------
                 if (esAdmin)
-                  
                   ListTile(
                     leading: const Icon(Icons.person_pin),
                     title: const Text('Doctores'),
@@ -144,7 +142,6 @@ class _DashboardPageState extends State<DashboardPage> {
                     Navigator.pushNamed(context, '/sedes');
                   },
                 ),
-                // ----------- OPCIÓN MIS TURNOS SOLO PARA DOCTOR -----------
                 if (esDoctor)
                   ListTile(
                     leading: const Icon(Icons.schedule),
@@ -216,108 +213,97 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 const SizedBox(height: 20),
                 GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
-                  children: [
-                    /*if (esAdmin)
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisSpacing: 15,
+                    mainAxisSpacing: 15,
+                    childAspectRatio: 0.7, // Más altura para evitar desbordamiento
+                    children: [
+                      if (esAdmin || esDoctor)
+                        DashboardCard(
+                          title: 'Paciente',
+                          icon: Icons.medical_services,
+                          color: Colors.blue,
+                          subtitle: 'Consulta información de pacientes',
+                          onTap: () {
+                            Navigator.pushNamed(context, '/paciente');
+                          },
+                        ),
+                      if (esPaciente)
+                        DashboardCard(
+                          title: 'Citas',
+                          icon: Icons.calendar_today,
+                          color: Colors.green,
+                          subtitle: 'Gestiona tus citas médicas',
+                          onTap: () {
+                            Navigator.pushNamed(context, '/citas');
+                          },
+                        ),
                       DashboardCard(
-                        title: 'Usuarios',
-                        icon: Icons.people,
-                        color: Colors.purple,
-                        subtitle: 'Gestiona los usuarios del sistema',
-                        onTap: () {
-                          Navigator.pushNamed(context, '/usuarios');
-                        },
-                      ),*/
-                    if (esAdmin || esDoctor )  
-                      DashboardCard(
-                        title: 'Paciente',
+                        title: 'Especialidades',
                         icon: Icons.medical_services,
-                        color: Colors.blue,
-                        subtitle: 'Consulta información de pacientes',
+                        color: Colors.deepPurple,
+                        subtitle: 'Gestiona tus especialidades',
                         onTap: () {
-                          Navigator.pushNamed(context, '/paciente');
+                          Navigator.pushNamed(context, '/especialidad');
                         },
                       ),
-                    if (esPaciente )  
-                      DashboardCard(
-                        title: 'Citas',
-                        icon: Icons.calendar_today,
-                        color: Colors.green,
-                        subtitle: 'Gestiona tus citas médicas',
-                        onTap: () {
-                          Navigator.pushNamed(context, '/citas');
-                        },
-                      ),
-                    DashboardCard(
-                      title: 'Especialidades',
-                      icon: Icons.calendar_today,
-                      color: Colors.deepPurple,
-                      subtitle: 'Gestiona tus especialidades',
-                      onTap: () {
-                        Navigator.pushNamed(context, '/especialidad');
-                      },
-                    ),
-                    if (esAdmin)
-                      DashboardCard(
-                        title: 'Doctores',
-                        icon: Icons.person_pin,
-                        color: Colors.orange,
-                        subtitle: 'Encuentra información de doctores',
-                        onTap: () {
-                          Navigator.pushNamed(context, '/doctores');
-                        },
-                      ),
-                    if (esAdmin|| esDoctor)
-                      DashboardCard(
-                        title: 'Sedes',
-                        icon: Icons.location_on,
-                        color: Colors.red,
-                        subtitle: 'Consulta las sedes disponibles',
-                        onTap: () {
-                          Navigator.pushNamed(context, '/sedes');
-                        },
-                      ),
-                    // ----------- TARJETA MIS TURNOS SOLO PARA DOCTOR -----------
-                    if (esDoctor)
-                      DashboardCard(
-                        title: 'Mis Turnos',
-                        icon: Icons.schedule,
-                        color: Colors.teal,
-                        subtitle: 'Visualiza tus turnos',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => MisTurnosPage(
-                                especialidades: especialidades,
-                                sedes: sedes,
+                      if (esAdmin)
+                        DashboardCard(
+                          title: 'Doctores',
+                          icon: Icons.person_pin,
+                          color: Colors.orange,
+                          subtitle: 'Encuentra información de doctores',
+                          onTap: () {
+                            Navigator.pushNamed(context, '/doctores');
+                          },
+                        ),
+                      if (esAdmin || esDoctor)
+                        DashboardCard(
+                          title: 'Sedes',
+                          icon: Icons.location_on,
+                          color: Colors.red,
+                          subtitle: 'Consulta las sedes disponibles',
+                          onTap: () {
+                            Navigator.pushNamed(context, '/sedes');
+                          },
+                        ),
+                      if (esDoctor)
+                        DashboardCard(
+                          title: 'Mis Turnos',
+                          icon: Icons.schedule,
+                          color: Colors.teal,
+                          subtitle: 'Visualiza tus turnos',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => MisTurnosPage(
+                                  especialidades: especialidades,
+                                  sedes: sedes,
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                        // ----------- TARJETA CREAR USUARIO SOLO PARA ADMIN -----------
-                    if (esAdmin)
-                      DashboardCard(
-                        title: 'Crear Usuario',
-                        icon: Icons.person_add,
-                        color: Colors.indigo,
-                        subtitle: 'Registrar un nuevo usuario',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const CrearUsuarioPage(),
-                            ),
-                          );
-                        },
-                      ),
-                  ],
-                ),
+                            );
+                          },
+                        ),
+                      if (esAdmin)
+                        DashboardCard(
+                          title: 'Crear Usuario',
+                          icon: Icons.person_add,
+                          color: Colors.indigo,
+                          subtitle: 'Registrar un nuevo usuario',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const CrearUsuarioPage(),
+                              ),
+                            );
+                          },
+                        ),
+                    ],
+                  )
               ],
             ),
           ),
