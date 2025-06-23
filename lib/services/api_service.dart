@@ -1,10 +1,11 @@
 import 'package:citas_app/models/registro.dart';
 import 'package:citas_app/models/user.dart';
+import 'package:citas_app/config/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class ApiService {
-  static const String _baseUrl = 'http://localhost:8081';
+  static const String _baseUrl = '${ApiConfig.baseAuthUrl}';
 
   Future<Map<String, dynamic>> login({
     required int tipoDocumento,
@@ -30,16 +31,13 @@ class ApiService {
       throw Exception('Error ${response.statusCode}: ${response.body}');
     }
   }
+
   Future<void> crearUsuario(Registro usuario) async {
-    final body = 
-      usuario.toJson()
-    ;
+    final body = usuario.toJson();
     print('Body: $usuario');
     final response = await http.post(
       Uri.parse('$_baseUrl/auth/register'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode(body),
     );
 
@@ -47,8 +45,8 @@ class ApiService {
       throw Exception('Error al crear usuario: ${response.body}');
     }
   }
-    Future<User> miPerfil(String token) async {
-    
+
+  Future<User> miPerfil(String token) async {
     final response = await http.get(
       Uri.parse('$_baseUrl/auth/me'),
       headers: {
@@ -67,5 +65,4 @@ class ApiService {
       throw Exception('Error al obtener el perfil: ${response.statusCode}');
     }
   }
-
 }

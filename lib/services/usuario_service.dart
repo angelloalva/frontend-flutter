@@ -1,23 +1,20 @@
 // usuario_service.dart
 import 'dart:convert';
+import 'package:citas_app/config/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:citas_app/models/user.dart';
 
-
 class UsuarioService {
-  static const String baseUrl = 'http://localhost:8082/api/usuarios';
+  static const String baseUrl = '${ApiConfig.baseAdminUrl}/api/usuarios';
 
   Future<void> crearUsuario({
-     required Map<String, dynamic> usuario,
+    required Map<String, dynamic> usuario,
     required Map<String, dynamic> doctor,
-     required String token,
+    required String token,
   }) async {
-    final body = {
-      'usuario': usuario,
-      if (doctor != null) 'doctor': doctor,
-    };
-  print('Body: $body');
+    final body = {'usuario': usuario, if (doctor != null) 'doctor': doctor};
+    print('Body: $body');
     final response = await http.post(
       Uri.parse('$baseUrl'),
       headers: {
@@ -31,8 +28,8 @@ class UsuarioService {
       throw Exception('Error al crear usuario: ${response.body}');
     }
   }
+
   Future<User> obtenerUsuario(String id, String token) async {
- 
     final response = await http.get(
       Uri.parse('$baseUrl/$id'),
       headers: {
@@ -53,7 +50,6 @@ class UsuarioService {
   }
 
   Future<void> actualizarUsuario(String id, User usuario, String token) async {
-
     final response = await http.put(
       Uri.parse('$baseUrl/$id'),
       headers: {
@@ -65,7 +61,7 @@ class UsuarioService {
 
     if (response.statusCode == 200) {
       final responseBody = jsonDecode(response.body);
-     if (responseBody['mensaje'] == 'Actualizado con éxito') {
+      if (responseBody['mensaje'] == 'Actualizado con éxito') {
         return; // Éxito
       } else {
         throw Exception('Respuesta inesperada: ${response.body}');

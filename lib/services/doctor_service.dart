@@ -1,10 +1,11 @@
 import 'dart:convert';
+import 'package:citas_app/config/api_config.dart';
 import 'package:citas_app/models/user.dart';
 import 'package:http/http.dart' as http;
 import '../models/doctor.dart';
 
 class DoctorService {
-  static const String baseUrl = 'http://localhost:8082/api/doctores';
+  static const String baseUrl = '${ApiConfig.baseAdminUrl}/api/doctores';
 
   Future<List<Doctor>> obtenerDoctores(String token) async {
     final response = await http.get(
@@ -23,7 +24,8 @@ class DoctorService {
       throw Exception('Error al obtener doctores: ${response.body}');
     }
   }
-    Future<List<User>> obtenerMisPacientes(String token) async {
+
+  Future<List<User>> obtenerMisPacientes(String token) async {
     final response = await http.get(
       Uri.parse('$baseUrl/mis-pacientes'),
       headers: {

@@ -1,30 +1,38 @@
 import 'dart:convert';
+import 'package:citas_app/config/api_config.dart';
 import 'package:citas_app/models/CitaResponse.dart';
 import 'package:citas_app/models/cita.dart';
 import 'package:http/http.dart' as http;
 
 class CitaService {
-  static const String baseUrl = 'http://localhost:8083/api/citas';
+  static const String baseUrl = '${ApiConfig.baseCitasUrl}/api/citas';
 
-   Future<void> crearCita(Cita cita,String token) async {
-     final jsonData = cita.toJson();
+  Future<void> crearCita(Cita cita, String token) async {
+    final jsonData = cita.toJson();
     print('=== DEBUG CITA SERVICE ===');
-      print('JSON que se va a enviar: $jsonData');
-      print('fechaHora en JSON: ${jsonData['fechaHora']}');
-      print('Body completo: ${jsonEncode(jsonData)}');
-  print('==========================');
+    print('JSON que se va a enviar: $jsonData');
+    print('fechaHora en JSON: ${jsonData['fechaHora']}');
+    print('Body completo: ${jsonEncode(jsonData)}');
+    print('==========================');
     final response = await http.post(
       Uri.parse(baseUrl),
-      headers: {'Content-Type': 'application/json' ,'Authorization': 'Bearer $token',},
-      
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+
       body: jsonEncode(jsonData),
     );
-   
+
     if (response.statusCode != 201) {
       throw Exception('Error al crear cita: ${response.body}');
     }
   }
-   Future<List<CitaResponse>> obtenerCitasPorPaciente(String pacienteId, String token) async {
+
+  Future<List<CitaResponse>> obtenerCitasPorPaciente(
+    String pacienteId,
+    String token,
+  ) async {
     final response = await http.get(
       Uri.parse('$baseUrl/paciente/$pacienteId'),
       headers: {

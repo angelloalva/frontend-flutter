@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'package:citas_app/config/api_config.dart';
 import 'package:citas_app/models/paciente.dart';
 import 'package:http/http.dart' as http;
 import '../models/user.dart';
 
 class PacienteService {
-  static const String baseUrl = 'http://localhost:8082/api/usuarios/pacientes';
+  static const String baseUrl =
+      '${ApiConfig.baseAdminUrl}/api/usuarios/pacientes';
 
   Future<List<Paciente>> obtenerPacientes(String token) async {
     final response = await http.get(
